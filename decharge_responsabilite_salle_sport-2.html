@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Décharge de Responsabilité – Salle de Sport</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap');
+
+  :root {
+    --bg: #0f1117;
+    --surface: #181c27;
+    --surface2: #1e2333;
+    --accent: #e8502a;
+    --accent2: #f07050;
+    --text: #eceef3;
+    --muted: #7a8099;
+    --border: #2a2f42;
+    --success: #2dcc8f;
+    --input-bg: #141720;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 40px 20px 80px;
+  }
+
+  /* PRINT STYLES */
+  @media print {
+    body { background: white; color: #111; padding: 0; }
+    .no-print { display: none !important; }
+    #form-wrapper {
+      max-width: 100%; box-shadow: none; border: none;
+      background: white; padding: 20px;
+    }
+    .section { background: white; border: 1px solid #ddd; }
+    .section-title { color: #e8502a; }
+    input, select, textarea {
+      border: 1px solid #aaa; background: white; color: #111;
+    }
+    .waiver-box { background: #f5f5f5; border: 1px solid #ccc; color: #111; }
+    .form-header { background: #111; }
+    .sig-canvas { border: 1px solid #aaa; background: white; }
+  }
+
+  #form-wrapper {
+    max-width: 860px;
+    margin: 0 auto;
+    background: var(--surface);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+  }
+
+  /* HEADER */
+  .form-header {
+    background: linear-gradient(135deg, #0a0d14 0%, #1a1d2e 60%, #1f1020 100%);
+    padding: 48px 48px 36px;
+    border-bottom: 3px solid var(--accent);
+    position: relative;
+    overflow: hidden;
+  }
+  .form-header::before {
+    content: '';
+    position: absolute; top: -60px; right: -60px;
+    width: 220px; height: 220px;
+    background: radial-gradient(circle, rgba(232,80,42,0.18) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .form-header::after {
+    content: '';
+    position: absolute; bottom: -40px; left: 40%;
+    width: 300px; height: 120px;
+    background: radial-gradient(ellipse, rgba(232,80,42,0.07) 0%, transparent 70%);
+  }
+  .header-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    gap: 20px;
+  }
+  .header-logo-img {
+    height: 72px;
+    width: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 8px rgba(232,80,42,0.25));
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+  }
+  .header-label {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 13px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .header-label::before {
+    content: '';
+    width: 28px; height: 2px;
+    background: var(--accent);
+    display: inline-block;
+  }
+  .form-title {
+    font-family: 'Bebas Neue', cursive;
+    font-size: clamp(32px, 6vw, 52px);
+    letter-spacing: 2px;
+    line-height: 1;
+    color: var(--text);
+  }
+  .form-title span { color: var(--accent); }
+  .form-subtitle {
+    margin-top: 10px;
+    font-size: 13px;
+    font-weight: 300;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+    max-width: 520px;
+    line-height: 1.6;
+  }
+
+  /* FORM BODY */
+  .form-body { padding: 40px 48px; }
+
+  .section {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 32px;
+    margin-bottom: 24px;
+  }
+  .section-title {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 18px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 22px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* GRID FIELDS */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .col-span-2 { grid-column: span 2; }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .field label .req { color: var(--accent); margin-left: 2px; }
+  .field input,
+  .field select,
+  .field textarea {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    padding: 11px 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+    width: 100%;
+  }
+  .field input:focus,
+  .field select:focus,
+  .field textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(232,80,42,0.12);
+  }
+  .field select option { background: #1e2333; }
+  .field textarea { resize: vertical; min-height: 70px; }
+
+  /* WAIVER TEXT */
+  .waiver-box {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    font-size: 13px;
+    line-height: 1.85;
+    color: #b0b6c8;
+    max-height: 280px;
+    overflow-y: auto;
+    margin-bottom: 20px;
+  }
+  .waiver-box::-webkit-scrollbar { width: 4px; }
+  .waiver-box::-webkit-scrollbar-track { background: transparent; }
+  .waiver-box::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .waiver-box p { margin-bottom: 12px; }
+  .waiver-box strong { color: var(--text); }
+
+  /* CHECKBOXES */
+  .check-group { display: flex; flex-direction: column; gap: 14px; }
+  .check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .check-item:hover { border-color: var(--accent); }
+  .check-item input[type="checkbox"] {
+    width: 18px; height: 18px;
+    min-width: 18px;
+    accent-color: var(--accent);
+    cursor: pointer;
+    margin-top: 1px;
+  }
+  .check-item span {
+    font-size: 13px;
+    line-height: 1.6;
+    color: #c0c5d8;
+  }
+  .check-item strong { color: var(--text); }
+
+  /* SIGNATURE PAD */
+  .sig-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .sig-label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .sig-canvas-wrapper {
+    position: relative;
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--input-bg);
+    transition: border-color 0.2s;
+  }
+  .sig-canvas-wrapper:hover { border-color: var(--accent); }
+  .sig-canvas-wrapper.active { border-color: var(--accent); border-style: solid; }
+  #sig-canvas {
+    display: block;
+    width: 100%;
+    height: 160px;
+    cursor: crosshair;
+    touch-action: none;
+  }
+  .sig-hint {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 12px;
+    color: var(--muted);
+    pointer-events: none;
+    text-align: center;
+    transition: opacity 0.3s;
+  }
+  .sig-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+  .btn-clear {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+  }
+  .btn-clear:hover { border-color: var(--accent); color: var(--text); }
+
+  /* BUTTONS */
+  .form-actions {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    justify-content: flex-end;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .btn-reset {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 8px;
+    padding: 13px 24px;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-reset:hover { border-color: var(--muted); color: var(--text); }
+  .btn-save {
+    background: var(--accent);
+    border: none;
+    color: white;
+    border-radius: 8px;
+    padding: 13px 32px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-save:hover { background: var(--accent2); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(232,80,42,0.35); }
+  .btn-save:active { transform: translateY(0); }
+  .btn-secondary {
+    background: transparent;
+    border: 1.5px solid var(--accent);
+    color: var(--accent);
+    border-radius: 8px;
+    padding: 13px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-secondary:hover { background: rgba(232,80,42,0.1); transform: translateY(-1px); }
+  .btn-secondary svg { width: 16px; height: 16px; }
+  .btn-save svg { width: 16px; height: 16px; }
+
+  /* NOTICE */
+  .notice {
+    background: rgba(45,204,143,0.08);
+    border: 1px solid rgba(45,204,143,0.25);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 12px;
+    color: var(--success);
+    margin-top: 16px;
+    display: none;
+    align-items: center;
+    gap: 8px;
+  }
+  .notice.show { display: flex; }
+
+  /* STATUS */
+  .required-note {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 24px;
+  }
+  .required-note span { color: var(--accent); }
+
+  /* SEPARATOR */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 8px 0 20px;
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 640px) {
+    .form-body { padding: 24px 20px; }
+    .form-header { padding: 32px 24px 24px; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .col-span-2 { grid-column: span 1; }
+    .form-actions { flex-direction: column; }
+    .btn-save, .btn-reset { width: 100%; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<div id="form-wrapper">
+  <!-- HEADER -->
+  <div class="form-header">
+    <div class="header-top">
+      <div>
+        <div class="header-label">Formulaire Officiel</div>
+        <div class="form-title">Décharge de <span>Responsabilité</span></div>
+      </div>
+      <img class="header-logo-img" src="data:image/jpeg;base64,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" alt="Sport Busca">
+    </div>
+    <div class="form-subtitle">
+      À compléter et signer lors de votre inscription ou renouvellement d'adhésion. 
+      Ce document est obligatoire avant toute pratique sportive dans nos locaux.
+    </div>
+  </div>
+
+  <!-- FORM BODY -->
+  <div class="form-body" id="printable-content">
+    <p class="required-note">Les champs marqués d'un <span>*</span> sont obligatoires.</p>
+
+    <!-- 1. INFORMATIONS PERSONNELLES -->
+    <div class="section">
+      <div class="section-title">1 — Informations Personnelles</div>
+      <div class="grid-2" style="margin-bottom:16px">
+        <div class="field">
+          <label>Nom <span class="req">*</span></label>
+          <input type="text" id="nom" placeholder="Nom de famille" required>
+        </div>
+        <div class="field">
+          <label>Prénom <span class="req">*</span></label>
+          <input type="text" id="prenom" placeholder="Prénom" required>
+        </div>
+      </div>
+      <div class="grid-3" style="margin-bottom:16px">
+        <div class="field">
+          <label>Date de naissance <span class="req">*</span></label>
+          <input type="date" id="ddn" required>
+        </div>
+        <div class="field">
+          <label>Sexe</label>
+          <select id="sexe">
+            <option value="">— Sélectionner —</option>
+            <option>Homme</option>
+            <option>Femme</option>
+            <option>Non précisé</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Numéro de téléphone <span class="req">*</span></label>
+          <input type="tel" id="tel" placeholder="06 XX XX XX XX" required>
+        </div>
+      </div>
+      <div class="grid-2" style="margin-bottom:16px">
+        <div class="field col-span-2">
+          <label>Adresse e-mail <span class="req">*</span></label>
+          <input type="email" id="email" placeholder="exemple@email.fr" required>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="field col-span-2">
+          <label>Adresse postale</label>
+          <input type="text" id="adresse" placeholder="Numéro, rue, code postal, ville">
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. CONTACT D'URGENCE -->
+    <div class="section">
+      <div class="section-title">2 — Contact en Cas d'Urgence</div>
+      <div class="grid-3">
+        <div class="field">
+          <label>Nom & Prénom <span class="req">*</span></label>
+          <input type="text" id="urgence-nom" placeholder="Nom complet" required>
+        </div>
+        <div class="field">
+          <label>Lien de parenté</label>
+          <select id="urgence-lien">
+            <option value="">— Sélectionner —</option>
+            <option>Conjoint(e)</option>
+            <option>Parent</option>
+            <option>Enfant</option>
+            <option>Ami(e)</option>
+            <option>Autre</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Téléphone <span class="req">*</span></label>
+          <input type="tel" id="urgence-tel" placeholder="06 XX XX XX XX" required>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. ÉTAT DE SANTÉ -->
+    <div class="section">
+      <div class="section-title">3 — Déclaration d'État de Santé</div>
+      <div class="check-group" style="margin-bottom:16px">
+        <label class="check-item">
+          <input type="checkbox" id="sante-ok">
+          <span>Je certifie être en <strong>bonne santé</strong> et ne présenter aucune contre-indication médicale connue à la pratique d'une activité physique et sportive.</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox" id="medecin">
+          <span>J'ai consulté un <strong>médecin</strong> au cours des 12 derniers mois et j'ai obtenu son accord pour la pratique d'une activité physique intense.</span>
+        </label>
+      </div>
+      <div class="field">
+        <label>Informations médicales importantes (allergies, traitements, pathologies…)</label>
+        <textarea id="medical-info" placeholder="Laisser vide si aucune information à communiquer"></textarea>
+      </div>
+    </div>
+
+    <!-- 4. TEXTE DE LA DÉCHARGE -->
+    <div class="section">
+      <div class="section-title">4 — Texte de la Décharge</div>
+      <div class="waiver-box">
+        <p>Le soussigné, ci-après dénommé « l'Adhérent », déclare avoir pris connaissance du règlement intérieur de l'établissement et s'engage à le respecter scrupuleusement.</p>
+        <p><strong>Reconnaissance des risques :</strong> L'Adhérent reconnaît que la pratique d'une activité physique et sportive comporte des risques inhérents, notamment des risques de blessures musculaires, articulaires, osseuses, cardiovasculaires, ou tout autre dommage corporel pouvant survenir pendant la pratique ou ultérieurement. L'Adhérent accepte volontairement ces risques en connaissance de cause.</p>
+        <p><strong>Décharge de responsabilité :</strong> En contrepartie de l'autorisation qui lui est accordée d'utiliser les installations, équipements et services de la salle de sport, l'Adhérent renonce à tout recours contre la salle de sport, ses dirigeants, ses employés, ses bénévoles, ses partenaires et ses ayants droit, pour tout dommage corporel, matériel ou immatériel, qu'il pourrait subir lors de la pratique d'une activité physique dans les locaux ou lors d'événements organisés par l'établissement.</p>
+        <p><strong>Obligation de prudence :</strong> L'Adhérent s'engage à n'utiliser les équipements qu'à bon escient et conformément à leur usage, à signaler immédiatement toute détérioration du matériel, et à informer le personnel de tout incident ou malaise. Il s'engage également à respecter les consignes de sécurité affichées et celles communiquées par le personnel.</p>
+        <p><strong>Aptitude médicale :</strong> L'Adhérent certifie sur l'honneur être apte médicalement à pratiquer une activité physique intense. Il déclare avoir informé son médecin de son intention de pratiquer une activité sportive et avoir recueilli, si nécessaire, son accord. En cas de modification de son état de santé, l'Adhérent s'engage à en informer immédiatement la direction de l'établissement.</p>
+        <p><strong>Responsabilité parentale :</strong> Pour les adhérents mineurs, le représentant légal signe la présente décharge en son nom et se porte garant du comportement de l'enfant au sein de l'établissement.</p>
+        <p><strong>Données personnelles :</strong> Conformément au Règlement Général sur la Protection des Données (RGPD), les informations recueillies sont destinées à la gestion administrative de l'adhésion. Elles ne seront pas cédées à des tiers sans consentement explicite. L'Adhérent dispose d'un droit d'accès, de rectification et de suppression de ses données.</p>
+        <p>La présente décharge est valable pour la durée de l'adhésion en cours et devra être renouvelée à chaque réinscription.</p>
+      </div>
+
+      <div class="check-group">
+        <label class="check-item">
+          <input type="checkbox" id="lu-compris">
+          <span>J'ai <strong>lu et compris</strong> l'intégralité du texte de la décharge de responsabilité et j'en accepte les termes sans réserve.</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox" id="risques">
+          <span>Je <strong>reconnais et accepte volontairement</strong> les risques inhérents à la pratique d'une activité physique et sportive.</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox" id="reglement">
+          <span>Je m'engage à respecter le <strong>règlement intérieur</strong> de l'établissement ainsi que les consignes de sécurité.</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox" id="rgpd">
+          <span>J'autorise l'établissement à conserver et traiter mes données personnelles dans le cadre de la gestion de mon adhésion, conformément à la politique RGPD.</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- 5. SIGNATURE -->
+    <div class="section">
+      <div class="section-title">5 — Signature Électronique</div>
+      <div class="sig-container">
+        <div class="sig-label">Signez dans le cadre ci-dessous à l'aide de la souris ou du doigt <span style="color:var(--accent)">*</span></div>
+        <div class="sig-canvas-wrapper" id="sig-wrapper">
+          <canvas id="sig-canvas"></canvas>
+          <div class="sig-hint" id="sig-hint">✦ Tracez votre signature ici</div>
+        </div>
+        <div class="sig-actions">
+          <button class="btn-clear no-print" onclick="clearSignature()">✕ Effacer la signature</button>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="grid-2">
+        <div class="field">
+          <label>Fait à <span class="req">*</span></label>
+          <input type="text" id="ville" placeholder="Ville">
+        </div>
+        <div class="field">
+          <label>Le <span class="req">*</span></label>
+          <input type="date" id="date-signature">
+        </div>
+      </div>
+      <div id="notice-success" class="notice">
+        ✓ Le formulaire est complet. Vous pouvez générer et télécharger le PDF.
+      </div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="form-actions no-print">
+      <button class="btn-reset" onclick="resetForm()">Réinitialiser</button>
+      <button class="btn-secondary" id="btn-email" onclick="handleAction('email')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="4" width="20" height="16" rx="2"/>
+          <polyline points="2,4 12,13 22,4"/>
+        </svg>
+        <span>Envoyer par e-mail</span>
+      </button>
+      <button class="btn-save" id="btn-save" onclick="handleAction('download')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>Télécharger le PDF</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── DÉTECTION FILEMAKER ──────────────────────────────────────────────────
+const IN_FILEMAKER = (typeof FileMaker !== 'undefined');
+
+// ─── SIGNATURE PAD ────────────────────────────────────────────────────────
+const canvas = document.getElementById('sig-canvas');
+const ctx = canvas.getContext('2d');
+const wrapper = document.getElementById('sig-wrapper');
+const hint = document.getElementById('sig-hint');
+let drawing = false, hasSig = false;
+
+function resizeCanvas() {
+  const ratio = window.devicePixelRatio || 1;
+  canvas.width = wrapper.clientWidth * ratio;
+  canvas.height = 160 * ratio;
+  ctx.scale(ratio, ratio);
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2.2;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+function getPos(e) {
+  const r = canvas.getBoundingClientRect();
+  if (e.touches) return { x: e.touches[0].clientX - r.left, y: e.touches[0].clientY - r.top };
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+canvas.addEventListener('mousedown', e => {
+  drawing = true; const p = getPos(e);
+  ctx.beginPath(); ctx.moveTo(p.x, p.y);
+  hint.style.opacity = '0'; wrapper.classList.add('active');
+});
+canvas.addEventListener('mousemove', e => {
+  if (!drawing) return; const p = getPos(e);
+  ctx.lineTo(p.x, p.y); ctx.stroke(); hasSig = true;
+});
+canvas.addEventListener('mouseup', () => { drawing = false; ctx.beginPath(); });
+canvas.addEventListener('mouseleave', () => { drawing = false; ctx.beginPath(); });
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault(); drawing = true; const p = getPos(e);
+  ctx.beginPath(); ctx.moveTo(p.x, p.y);
+  hint.style.opacity = '0'; wrapper.classList.add('active');
+}, { passive: false });
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault(); if (!drawing) return; const p = getPos(e);
+  ctx.lineTo(p.x, p.y); ctx.stroke(); hasSig = true;
+}, { passive: false });
+canvas.addEventListener('touchend', () => { drawing = false; ctx.beginPath(); });
+
+function clearSignature() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  hasSig = false; hint.style.opacity = '1'; wrapper.classList.remove('active');
+}
+
+// ─── DATE DU JOUR ─────────────────────────────────────────────────────────
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('date-signature').value = today;
+
+// ─── VALIDATION ───────────────────────────────────────────────────────────
+function validate() {
+  const req = ['nom','prenom','ddn','tel','email','urgence-nom','urgence-tel','ville','date-signature'];
+  const checks = ['lu-compris','risques','reglement','sante-ok'];
+  const ok = req.every(id => document.getElementById(id).value.trim() !== '')
+          && checks.every(id => document.getElementById(id).checked)
+          && hasSig;
+  document.getElementById('notice-success').classList.toggle('show', ok);
+  return ok;
+}
+document.querySelectorAll('input, select, textarea').forEach(el => {
+  el.addEventListener('change', validate);
+  el.addEventListener('input', validate);
+});
+
+// ─── GÉNÉRATION PDF (cœur commun) ─────────────────────────────────────────
+async function buildPDF() {
+  const { jsPDF } = window.jspdf;
+  const element = document.getElementById('printable-content');
+  const canvas2 = await html2canvas(element, {
+    scale: 2, useCORS: true, backgroundColor: '#181c27',
+    logging: false, windowWidth: 900
+  });
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const pageW = pdf.internal.pageSize.getWidth();
+  const pageH = pdf.internal.pageSize.getHeight();
+  const margin = 10, imgW = pageW - margin * 2;
+  const imgH = (canvas2.height * imgW) / canvas2.width;
+  let yPos = margin, remainH = imgH;
+  while (remainH > 0) {
+    const sectionH = Math.min(remainH, pageH - margin * 2);
+    const srcY = (imgH - remainH) / imgH * canvas2.height;
+    const srcH = sectionH / imgH * canvas2.height;
+    const pc = document.createElement('canvas');
+    pc.width = canvas2.width; pc.height = srcH;
+    pc.getContext('2d').drawImage(canvas2, 0, srcY, canvas2.width, srcH, 0, 0, canvas2.width, srcH);
+    pdf.addImage(pc.toDataURL('image/png'), 'PNG', margin, yPos, imgW, sectionH);
+    remainH -= sectionH;
+    if (remainH > 0) { pdf.addPage(); yPos = margin; }
+  }
+  const nom    = document.getElementById('nom').value.trim().replace(/\s+/g,'_');
+  const prenom = document.getElementById('prenom').value.trim().replace(/\s+/g,'_');
+  const date   = document.getElementById('date-signature').value.replace(/-/g,'');
+  return { pdf, filename: `decharge_${prenom}_${nom}_${date}.pdf` };
+}
+
+// ─── ACTION PRINCIPALE ────────────────────────────────────────────────────
+async function handleAction(mode) {
+  if (!validate()) {
+    alert('⚠️ Veuillez remplir tous les champs obligatoires, cocher les cases requises et apposer votre signature avant de continuer.');
+    return;
+  }
+
+  const btnSave  = document.getElementById('btn-save');
+  const btnEmail = document.getElementById('btn-email');
+  const activeBtn = mode === 'download' ? btnSave : btnEmail;
+  const originalHTML = activeBtn.innerHTML;
+  activeBtn.innerHTML = '<span>⏳ Génération…</span>';
+  activeBtn.disabled = true;
+  btnSave.disabled = true;
+  btnEmail.disabled = true;
+
+  try {
+    const { pdf, filename } = await buildPDF();
+
+    if (mode === 'download') {
+      // ── TÉLÉCHARGEMENT CLASSIQUE ──────────────────────────────────────
+      pdf.save(filename);
+
+    } else {
+      // ── ENVOI E-MAIL : ouvre le PDF dans un onglet (sans sauvegarder)
+      //    + ouvre le client mail avec l'adresse pré-remplie ──────────────
+      const email   = document.getElementById('email').value.trim();
+      const prenom  = document.getElementById('prenom').value.trim();
+      const nom     = document.getElementById('nom').value.trim();
+      const dateSig = document.getElementById('date-signature').value;
+
+      // Ouvre le PDF dans un nouvel onglet (en mémoire, rien sur le disque)
+      const blob    = pdf.output('blob');
+      const blobURL = URL.createObjectURL(blob);
+      window.open(blobURL, '_blank');
+
+      // Ouvre le client mail avec les infos pré-remplies
+      const sujet = encodeURIComponent(`Décharge de responsabilité – ${prenom} ${nom}`);
+      const corps = encodeURIComponent(
+        `Bonjour ${prenom},\n\n` +
+        `Veuillez trouver ci-joint votre décharge de responsabilité signée le ${dateSig}.\n\n` +
+        `Ce document confirme votre adhésion à notre salle de sport ainsi que votre acceptation de notre règlement intérieur.\n\n` +
+        `Conservez ce document pour vos archives.\n\n` +
+        `Cordialement,\nL'équipe Sport Busca`
+      );
+      window.location.href = `mailto:${email}?subject=${sujet}&body=${corps}`;
+
+      // Petit message d'instruction
+      setTimeout(() => {
+        alert(
+          '📎 Le PDF s\'est ouvert dans un nouvel onglet.\n\n' +
+          'Glissez-le depuis l\'onglet ou téléchargez-le depuis le navigateur\n' +
+          'puis joignez-le à l\'e-mail qui vient de s\'ouvrir.'
+        );
+        URL.revokeObjectURL(blobURL);
+      }, 800);
+    }
+
+  } catch (err) {
+    alert('Erreur lors de la génération du PDF : ' + err.message);
+    console.error(err);
+  }
+
+  activeBtn.innerHTML = originalHTML;
+  btnSave.disabled  = false;
+  btnEmail.disabled = false;
+}
+
+// ─── RESET ────────────────────────────────────────────────────────────────
+function resetForm() {
+  if (!confirm('Réinitialiser tous les champs du formulaire ?')) return;
+  document.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"], textarea').forEach(el => el.value = '');
+  document.querySelectorAll('input[type="checkbox"]').forEach(el => el.checked = false);
+  document.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
+  document.getElementById('date-signature').value = today;
+  document.getElementById('ddn').value = '';
+  clearSignature();
+  document.getElementById('notice-success').classList.remove('show');
+}
+</script>
+</body>
+</html>
